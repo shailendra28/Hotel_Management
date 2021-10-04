@@ -1,0 +1,26 @@
+{
+  "name": "hotelmanagement",
+  "version": "1.0.0",
+  "description": "hotelmanagement package",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shailendra28/Hotel_Management.git"
+  },
+  "author": "shailendra",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/shailendra28/Hotel_Management/issues"
+  },
+  "homepage": "https://github.com/shailendra28/Hotel_Management#readme",
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "prompt-sync": "^4.2.0",
+    "prompt-sync-history": "^1.0.1"
+  },
+  "devDependencies": {}
+}

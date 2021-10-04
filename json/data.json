@@ -1,0 +1,23 @@
+[
+    {
+        "firstName": "Shailendra",
+        "lastName" : "Yadav",
+        "phone": "8779796556",
+        "daystoStay": "1",
+        "uId": "Shail6556",
+        "orders": [
+            [
+                {"item": "tea", "quantity":1,"price":50,"amount": 50 },
+                {"item": "breakfast", "quantity":1,"price":150,"amount": 150 }
+            ]
+        ]
+    },
+    {
+        "firstName": "Rohan",
+        "lastName" : "Pawar",
+        "phone": "9969550645",
+        "daystoStay": "1",
+        "uId": "Pawa0645",
+        "orders":[]
+    }
+]
