@@ -1,247 +1,279 @@
-const { update } = require("lodash");
 const prompt = require("prompt-sync")();
-const CustomerDetail = require('./customerDetails');
-const CustomerOrders = require('./customerDetails');
-const fs = require('fs')
+const CustomerDetail = require("./customerDetails");
+const CustomerOrders = require("./customerOrder");
+const fs = require("fs");
+const JsonToXlsx = require("xlsx");
 
-class CustomerUtility{
-// customer's Menu 
-customerMenu = () => {
-console.log("\nPress 1: Registration");
-console.log("Press 2: Login");
-console.log("Press3: Exit");
-return parseInt(prompt("Enter your choice : "));
-
-};
-
-// registration of customer
-registerUser = (dataArray) => {
-    let customer = new Customer();
+class CustomerUtility {
+  // New registration of customer
+  registerCustomer = () => {
+    let customer = new CustomerDetail();
     console.log("");
-    customer.fName = prompt("Enter your first name");
-    customer.lName = prompt("Enter your last name");
-    customer.phone = prompt("Enter your phone number");
-    customer.email = prompt("Enter your email Id");
-    customer.daystoStay = prompt("Enter the number of days to stay");
-    customer.uId = this.generateuId(
-        customer.fName,
-        customer.phone
+    customer.fName = prompt("Enter your first name : ");
+    customer.lName = prompt("Enter your last name : ");
+    customer.phone = prompt("Enter your phone number : ");
+    customer.email = prompt("Enter your email Id : ");
+    customer.daystoStay = prompt("Enter the number of days to stay : ");
+    customer.uniqueKey = this.generateuniqueKey(customer.fName, customer.phone);
+
+    customer.checkInDate = new Date();
+    customer.pass = prompt("Choose a password : ");
+    this.write(customer, "G:/HotelManagement/json/data.json");
+    console.log();
+    console.log(customer.fName, customer.lName, "registered successfully");
+  };
+  //generate uId for customer
+  generateuniqueKey = (name, number) => {
+    return name.substring(0, 4) + number.substring(0, 4);
+  };
+
+  write = (user) => {
+    try {
+      const docObj = JSON.parse(
+        fs.readFileSync("G:/HotelManagement/json/data.json")
+      );
+      docObj.push(user);
+      fs.writeFileSync(
+        "G:/HotelManagement/json/data.json",
+        JSON.stringify(docObj)
+      );
+    } catch {
+      let docArray = new Array();
+      docArray.push(CustomerDetail);
+      fs.writeFileSync(
+        "G:/HotelManagement/json/data.json",
+        JSON.stringify(docArray)
+      );
+    }
+  };
+
+  //login option
+  login() {
+    console.log(
+      "\n  --- Please choose login option ---\n 1.Admin login \n 2.User login \n 3.exit\n"
     );
+    let choice = parseInt(prompt("Enter your choice : "));
+    switch (choice) {
+      case 1:
+        this.adminLogin();
+        break;
+      case 2:
+        this.userLogin();
+        break;
+      default:
+        console.log("Invalid Choice!");
+        break;
+    }
+  }
 
-customer.orders = [];
-this.writeJSON(customer);
-console.log(
-    "\n" + 
-    customer.fName +
-    " " +
-    customer.lName +
-    " You registerd succesfully"
-);
-};
+  // Admin login
+  adminLogin() {
+    let username = prompt("Enter your username : ");
+    let password = prompt("Enter passcode : ");
+    let flag = true;
+    if (username === "Admin" && password === "admin123") {
+      console.log("\nWelcome Admin");
+      do {
+        console.log(
+          "\n  --- Please choose login option ---\n 1.Generate Bill  \n 2.exit\n );"
+        );
+        let option = parseInt(prompt("Enter your choice : "));
+        if (option === 1) {
+          this.generateBill();
+        } else if (option == 2) flag = false;
+      } while (flag);
+    } else console.log("Invalid entry");
+  }
 
+  generateBill() {
+    console.log("Print Bill:");
+    this.jsonToXlsx(
+      "G:/HotelManagement/json/data.json",
+      "G:/HotelManagement/report/report.xlsx",
+      "customerBill"
+    );
+    this.jsonToXlsx(
+      "G:/HotelManagement/json/customer.json",
+      "G:/HotelManagement/report/order.xlsx",
+      "orderReport"
+    );
+  }
+  userLogin() {
+    let name = prompt("Enter customer name: ");
+    let password = prompt("Enter your password: ");
 
-//  customer info to json file
-writeJSON = (customer) => {
     const doc = fs.readFileSync("G:/HotelManagement/json/data.json");
     const docObj = JSON.parse(doc);
-    docObj.push(customer);
-    const str = JSON.stringify(docObj);
-    fs.writeFileSync("G:/HotelManagement/json/data.json");
-};
 
-//generate uId for customer
-generateuId = (name ,number) => {
-    return name.substring(0, 4) + number.stringify(0,4);
-};
-
-
-//login for customer
-login = () =>
-    {
-    console.log (
-        "\n(Hint : your key must b 4 char of your name and mob number)"
-        );
-        let name = prompt("enter your name : ");
-        let uId = prompt("enter key : ");
-        const doc = fs.readFileSync("G:/HotelManagement/json/data.json");
-        const docObj = JSON.parse(doc);
-        for (let user in docObj) {
-        if  (
-            (docObj[user].firstName === name && docObj[user].uId) === uId
-        )
-        {
-            const userDetailsobj = docObj[user];
-            return userDetailsobj;
-        }   else if (name == "Admin" && uId == "admin123") {
-            console.log("\nWelcome Admin");
-            this.adminPage();
-        }
+    for (let user in docObj) {
+      if (docObj[user].name === name && docObj[user].uniqueKey === password) {
+        this.customer = docObj[user];
+        console.log("\n|--- Welcome", this.customer.name + "! ---|");
+        this.orderMenu();
+      }
     }
-}
-    
-// order Menu of customer
+    console.log("Incorrect matched");
+    console.log("");
+  }
 
-orderMenu = () => {
-    const loginObject = this.login();
+  orderMenu = () => {
     let option = 0;
     do {
-        console.log("\nPress 1 - order food");
-        console.log("\nPress 2 - order service");
-        console.log("\nPress 3 - order check out");
-        console.log("\nPress 4 - log out");
-        option = parseInt(prompt("enter your choice: "));
-        switch (option) {
-            case 1 :
-            this.orderFood(loginObject);
-            break;
-            case 2:
-            this.orderServises(loginObject);
-            break;
-            case 3:
-                console.log("not implemented yet");
-                break;
-                default :
-                console.log();
-                break;
-        }
-    }
-     while (option != 4);
-    };
+      console.log(
+        "\n  --- Please choose Your Menu ---\n 1.Order food \n 2.Other services \n 3.exit\n"
+      );
+      option = parseInt(prompt("Enter your choice : "));
 
-
-    // update data According to  user's order
-    updateData = (uId,order) => {
-        const doc = fs.readFileSync("G:/HotelManagement/json/data.json");
-        const docObj = JSON.parse(doc);
-        docObj.forEach(element => {
-            if (element.uId == uId) {
-                element.order.push(orders);
-            }
-            
-        });
-
-    orderFood = (loginObject) => {
-        let foodArray = new Array();
-        let option = 0;
-        do {
-            console.log("\nPress1 - oreder tea (50)");
-            console.log("\nPress2 - oreder breakfast (150)");
-            console.log("\nPress3 - oreder lunch (250)");
-            console.log("\nPress4 - oreder dinner (350)");
-            console.log("\nPress5 - oreder confirm");
-            console.log("\nPress6 - back\n");
-            option = parseInt(prompt("enter ur choice : "));
-                switch (option) {
-                    case 1:
-                        foodArray.push(new orders("tea", 1,50,50));
-                        console.log("\nItem added in cart");
-                        break;
-                    case 2:
-                        foodArray.push(new orders("breakfast", 1,150,150));
-                        console.log("\nItem added in cart");
-                        break;
-                    case 3:
-                        foodArray.push(new orders("lunch", 1,250,250));
-                        console.log("\nItem added in cart");
-                        break; 
-                    case 4:
-                        foodArray.push(new orders("dinner", 1,350,350));
-                        console.log("\nItem added in cart");
-                        break;   
-                    case 5:
-                        foodArray.push(new orders("order confirm"));
-                        this.updateData(loginObject.uId.foodArray);
-                        break;
-
-                }
-            }while (option != 6);
-        }
-    };
-
-        // Order services
-
-        orderServices= (loginObject) => {
-            let serviceArray = new Array();
-            let option = 0;
-            do {
-                console.log("\nPress1 - order Cleanning (50)");
-                console.log("\nPress2 - order travell giude (150)");
-                console.log("\nPress3 - order car (250)");
-                console.log("\nPress4 - order bike (350)");
-                console.log("\nPress5 - order confirm");
-                console.log("\nPress6 - back\n");
-                option = parseInt(prompt("enter ur choice : "));
-                switch (option) {
-                    case 1:
-                        serviceArray.push(new orders("Cleanning", 1,50,50));
-                        console.log("\nItem added in cart");
-                        break;
-                    case 2:
-                        serviceArray.push(new orders("travell giude", 1,150,150));
-                        console.log("\nItem added in cart");
-                        break;
-                    case 3:
-                        serviceArray.push(new orders("car", 1,250,250));
-                        console.log("\nItem added in cart");
-                        break; 
-                    case 4:
-                        serviceArray.push(new orders("bike", 1,350,350));
-                        console.log("\nItem added in cart");
-                        break;   
-                    case 5:
-                        serviceArray.push(new orders("order confirm"));
-                        this.updateData(loginObject.uId.foodArray);
-                        break;
-
-                }
-            }while (option != 6);
-        };
-
-        // billing
-
-
-        createBill = (uId) => {
-            const doc = fs.readFileSystem("G:/HotelManagement/json/data.json");
-            const docObj = JSON.parse(doc);
-            docObj.forEach((element) => {
-              if (element.uId == uId){
-                  var sum = element.purchaseArray.reduce(function (a, b){
-                      return a + b;
-                  }, 0);
-                  return sum;
-              }
-            });
-        };
-
-        // admin 
-
-        adminPage = () => {
-            console.log("\nPress1 - print bill");
-            console.log("Press2 - view all customers");
-            console.log("Press 3 - logout\n");
-            let option = parseInt(prompt("enter ur choice:"));
-            if (option == 1) {
-                let uId = prompt("enter key to confirm :");
-            console.log("Total bill :" + this.createBill(uId));
-        } else if (option == 2) {
-            const doc = fs.readFileSystem("G:/HotelManagement/json/data.json");
-            const docObj = JSON.parse(doc);
-            console.log(docObj);
-        } else this.login();
-    }
-
-
-         orderFinal = (uId, orders) => {
-            const doc = fs.readFileSync("G:/HotelManagement/json/data.json");
-            const detailObj = JSON.parse(doc);
-            detailObj.forEach((element) => {
-            if (element.uId == uId) {
-            element.orders.push(orders);
-         }
-    });
-    const str = JSON.stringify(detailObj);
-    fs.writeFileSync("", str);
+      switch (option) {
+        case 1:
+          this.orderFood();
+          break;
+        case 2:
+          this.orderServices();
+          break;
+        case 3:
+          this.exit();
+          option = 4;
+          break;
+        default:
+          console.log("Not Allowed");
+          break;
+      }
+    } while (option != 4);
   };
 }
+orderFood = () => {
+  let flag = true;
+  while (flag) {
+    console.log("\nPress 1 - Order Tea (10Rs)");
+    console.log("Press 2 - Order Breakfast (150Rs)");
+    console.log("Press 3 - Order Lunch (250Rs)");
+    console.log("Press 4 - Order Dinner (500Rs)");
+    console.log("Press 5 - Back\n");
+    let option = parseInt(prompt("Enter Your Choice"));
+
+    switch (option) {
+      case 1:
+        this.write(new Orders(this.customer.uniqueKey, "Tea", 1, 10));
+        console.log("\n Tea selected successfully");
+        break;
+      case 2:
+        this.write(new Orders(this.customer.uniqueKey, "Breakfast", 1, 150));
+        console.log("\nBreakfast selected successfully");
+        break;
+      case 3:
+        this.write(new Orders(this.customer.uniqueKey, "Lunch", 1, 250));
+        console.log("\nLunch selected successfully");
+        break;
+      case 4:
+        this.write(new Orders(this.customer.uniqueKey, "Dinner", 1, 500));
+        console.log("\nDinner selected  successfully");
+        break;
+      case 5:
+        flag = false;
+        break;
+      default:
+        console.log("Invalid!!!");
+    }
+  }
+};
+otherServices = () => {
+  let flag = true;
+  while (flag) {
+    console.log("\nPress 1 - Rent Bike(550Rs)");
+    console.log("Press 2 - Rent Car(1000Rs)");
+    console.log("Press 3 - Exit\n");
+    let option = parseInt(prompt("Enter Your Choice"));
+
+    switch (option) {
+      case 1:
+        this.write(new Orders(this.customer.uniqueKey, "Bike", 1, 550));
+        console.log("\nBike selected successfully");
+        break;
+      case 2:
+        this.write(new Orders(this.customer.uniqueKey, "Car", 1, 1000));
+        console.log("\nCar selected successfully");
+        break;
+      case 3:
+        console.log("Exit");
+        flag = false;
+        break;
+      default:
+        console.log("Invalid!!!");
+    }
+  }
+};
+
+checkout = () => {
+  console.log("Create bill");
+  let checkInDate = new Date(this.customer.checkInDate);
+  this.customer.checkOutDate = new Date();
+  const totalBill = this.generateBill(
+    this.customer.uniqueKey,
+    checkInDate,
+    this.customer.checkOutDate
+  );
+  console.log(totalBill);
+};
+generateBill = (uniqueKey, checkInDate, checkOutDate) => {
+  const docObj = JSON.parse(
+    fs.readFileSync("G:/HotelManagement/json/customer.json")
+  );
+  const docObj2 = JSON.parse(
+    fs.readFileSync("G:/HotelManagement/json/data.json")
+  );
+  let sum = 0;
+  let stay = 0;
+  let diff = checkOutDate.getHours() - checkInDate.getHours();
+  docObj.forEach((element) => {
+    if (element.uniqueKey === uniqueKey) {
+      sum += element.price;
+    }
+  });
+  docObj2.forEach((element) => {
+    if (element.uniqueKey === uniqueKey) {
+      stay = element.stayOfDays;
+    }
+  });
+  if (diff < 12) {
+    return (sum += 500);
+  } else {
+    return (sum += stay * 1000);
+  }
+};
+
+//  customer orders read-write data in json
+writeOrders = (order) => {
+  try {
+    const docObj = JSON.parse(
+      fs.readFileSync("G:/HotelManagement/json/customer.json")
+    );
+    docObj.push(order);
+    fs.writeFileSync(
+      "G:/HotelManagement/json/customer.json",
+      JSON.stringify(docObj)
+    );
+  } catch {
+    let docArray = new Array();
+    docArray.push(order);
+    fs.writeFileSync(
+      "G:/HotelManagement/json/customer.json",
+      JSON.stringify(docArray)
+    );
+  }
+};
+
+getJsonObj = (inputFile) => {
+  let stringJson = fs.readFileSync(inputFile);
+  let jsonObj = JSON.parse(stringJson);
+  return jsonObj;
+};
+jsonToXlsx = (jsonFile, xlsxFile, sheetName) => {
+  let jsonObj = this.getJsonObj(jsonFile);
+  let workBook = JsonToXlsx.utils.book_new();
+  let workSheet = JsonToXlsx.utils.json_to_sheet(jsonObj);
+  JsonToXlsx.utils.book_append_sheet(workBook, workSheet, sheetName);
+  JsonToXlsx.writeFile(workBook, xlsxFile);
+};
 
 module.exports = CustomerUtility;
